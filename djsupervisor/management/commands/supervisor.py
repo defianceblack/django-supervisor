@@ -22,18 +22,15 @@ The "supervisor" command suports several modes of operation:
 
 """
 
-from __future__ import absolute_import, with_statement
+
 
 import sys
 import os
 import time
 from textwrap import dedent
 import traceback
-from ConfigParser import RawConfigParser, NoOptionError
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+from configparser import RawConfigParser, NoOptionError
+from io import StringIO
 
 from supervisor import supervisord, supervisorctl
 
@@ -45,7 +42,7 @@ from djsupervisor.events import CallbackModifiedHandler
 
 AUTORELOAD_PATTERNS = getattr(settings, "SUPERVISOR_AUTORELOAD_PATTERNS",
                               ['*.py'])
-AUTORELOAD_IGNORE = getattr(settings, "SUPERVISOR_AUTORELOAD_IGNORE_PATTERNS", 
+AUTORELOAD_IGNORE = getattr(settings, "SUPERVISOR_AUTORELOAD_IGNORE_PATTERNS",
                             [".*", "#*", "*~"])
 
 class Command(BaseCommand):
@@ -216,7 +213,7 @@ class Command(BaseCommand):
         """Command 'supervisor getconfig' prints merged config to stdout."""
         if args:
             raise CommandError("supervisor getconfig takes no arguments")
-        print cfg_file.read()
+        print(cfg_file.read())
         return 0
 
     def _handle_autoreload(self,cfg_file,*args,**options):
@@ -256,7 +253,7 @@ class Command(BaseCommand):
         # This will avoid errors with e.g. too many inotify watches.
         from watchdog.observers import Observer
         from watchdog.observers.polling import PollingObserver
-        
+
         observer = None
         for ObserverCls in (Observer, PollingObserver):
             observer = ObserverCls()
@@ -265,15 +262,15 @@ class Command(BaseCommand):
                     observer.schedule(handler, live_dir, True)
                 break
             except Exception:
-                print>>sys.stderr, "COULD NOT WATCH FILESYSTEM USING"
-                print>>sys.stderr, "OBSERVER CLASS: ", ObserverCls
+                print("COULD NOT WATCH FILESYSTEM USING", file=sys.stderr)
+                print("OBSERVER CLASS: ", ObserverCls, file=sys.stderr)
                 traceback.print_exc()
                 observer.start()
                 observer.stop()
 
         # Fail out if none of the observers worked.
         if observer is None:
-            print>>sys.stderr, "COULD NOT WATCH FILESYSTEM"
+            print("COULD NOT WATCH FILESYSTEM", file=sys.stderr)
             return 1
 
         # Poll if we have an observer.
@@ -316,7 +313,7 @@ class Command(BaseCommand):
         directories on sys.path that are actively in use.
         """
         live_dirs = []
-        for mod in sys.modules.values():
+        for mod in list(sys.modules.values()):
             #  Get the directory containing that module.
             #  This is deliberately casting a wide net.
             try:
@@ -342,7 +339,7 @@ class Command(BaseCommand):
         return live_dirs
 
 
-class OnDemandStringIO(object):
+class OnDemandStringIO(StringIO):
     """StringIO standin that demand-loads its contents and resets on EOF.
 
     This class is a little bit of a hack to make supervisord reloading work
@@ -353,6 +350,7 @@ class OnDemandStringIO(object):
     """
 
     def __init__(self, callback, *args, **kwds):
+        super().__init__("")
         self._fp = None
         self.callback = callback
         self.args = args
