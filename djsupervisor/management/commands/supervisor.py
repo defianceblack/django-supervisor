@@ -173,7 +173,7 @@ class Command(BaseCommand):
             else:
                 argv = argv[:i] + ["--"] + argv[i:]
                 break
-        return super(Command,self).run_from_argv(argv)
+        return super().run_from_argv(argv)
 
     def handle(self, *args, **options):
         args = args or tuple(options.pop('ctl-command'))
@@ -318,7 +318,7 @@ class Command(BaseCommand):
             #  This is deliberately casting a wide net.
             try:
                 dirnm = os.path.dirname(mod.__file__)
-            except AttributeError:
+            except (AttributeError, TypeError):
                 continue
             #  Normalize it for comparison purposes.
             dirnm = os.path.realpath(os.path.abspath(dirnm))
